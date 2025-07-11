@@ -1,0 +1,264 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  background-color: #000;
+  color: #00ff00;
+  overflow: hidden;
+}
+
+.terminal-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal {
+  width: 100%;
+  max-width: 900px;
+  height: 600px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: absolute;
+  user-select: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.terminal:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.4);
+}
+
+
+
+.terminal-header {
+  background-color: #2a2a2a;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  cursor: grab;
+}
+
+.terminal-header:active {
+  cursor: grabbing;
+}
+
+.terminal-buttons {
+  display: flex;
+  gap: 8px;
+  margin-right: 20px;
+}
+
+.terminal-button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.terminal-button:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.terminal-button.close {
+  background-color: #ff5f56;
+}
+
+.terminal-button.minimize {
+  background-color: #ffbd2e;
+}
+
+.terminal-button.maximize {
+  background-color: #27ca3f;
+}
+
+.terminal-title {
+  color: #ccc;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.terminal-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background-color: #1a1a1a;
+  color: #00ff00;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.terminal-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.terminal-line.command {
+  color: #00ff00;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.terminal-line.output {
+  color: #00ff00;
+}
+
+.terminal-line.input {
+  color: #00ff00;
+  font-weight: bold;
+}
+
+.prompt {
+  color: #00ff00;
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.content {
+  color: #00ff00;
+}
+
+.input-display {
+  color: #00ff00;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: transparent;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+  min-width: 1px;
+  flex: 1;
+  caret-color: transparent;
+  display: inline-block;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: calc(100% - 200px);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  -webkit-text-security: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  text-security: none;
+  -webkit-text-fill-color: transparent;
+  pointer-events: auto;
+  resize: none;
+  overflow: hidden;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove search input clear button */
+.terminal-input::-webkit-search-cancel-button,
+.terminal-input::-webkit-search-decoration,
+.terminal-input::-webkit-search-results-button,
+.terminal-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.terminal-input:focus {
+  outline: none;
+}
+
+.terminal-input:empty::before {
+  content: '';
+}
+
+.cursor {
+  color: #00ff00;
+  animation: blink 1s infinite;
+  font-weight: bold;
+  display: inline-block;
+  margin-left: 0;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Scrollbar styling */
+.terminal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.terminal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .terminal {
+    height: 80vh;
+    max-width: 95vw;
+  }
+  
+  .terminal-content {
+    font-size: 12px;
+    padding: 12px;
+  }
+  
+  .terminal-header {
+    padding: 6px 8px;
+  }
+  
+  .terminal-title {
+    font-size: 10px;
+  }
+}
