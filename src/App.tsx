@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [lastSize, setLastSize] = useState<{ width: number; height: number }>({ width: 900, height: 600 });
 
   const [hydraActive, setHydraActive] = useState(true);
+  const [currentPattern, setCurrentPattern] = useState(0);
 
   const commands = [
     'LINKEDIN - Connect with me on LinkedIn',
@@ -53,6 +54,8 @@ const App: React.FC = () => {
     'WHOAMI - Show current user name',
     'SETNAME <name> - Set your user name',
     'HYDRA - Toggle generative background',
+    'CYCLE - Cycle to next background pattern',
+    'PATTERN <number> - Switch to specific pattern',
     'HELP - Show available commands',
     'CLEAR - Clear the terminal'
   ];
@@ -255,6 +258,24 @@ const App: React.FC = () => {
       case 'HYDRA':
         setHydraActive(!hydraActive);
         setLines(prev => [...prev, { type: 'output', content: `Hydra background ${hydraActive ? 'disabled' : 'enabled'}` }]);
+        break;
+      case 'CYCLE':
+        setCurrentPattern((prev) => (prev + 1) % 8); // Now 8 patterns
+        setLines(prev => [...prev, { type: 'output', content: 'Cycling to next pattern...' }]);
+        break;
+      case 'PATTERN':
+        const patternMatch = sanitizedCommand.match(/PATTERN\s+(\d+)/i);
+        if (patternMatch) {
+          const patternIndex = parseInt(patternMatch[1]);
+          if (patternIndex >= 0 && patternIndex < 8) { // Now 8 patterns
+            setCurrentPattern(patternIndex);
+            setLines(prev => [...prev, { type: 'output', content: `Switched to pattern ${patternIndex}` }]);
+          } else {
+            setLines(prev => [...prev, { type: 'output', content: 'Invalid pattern number. Available: 0-7' }]);
+          }
+        } else {
+          setLines(prev => [...prev, { type: 'output', content: 'Usage: PATTERN <number>' }]);
+        }
         break;
       case 'CLEAR':
         setLines([]);
@@ -575,7 +596,11 @@ const App: React.FC = () => {
 
   return (
     <>
-      <HydraBackground isActive={!isClosed && hydraActive} />
+      <HydraBackground 
+        isActive={!isClosed && hydraActive} 
+        currentPattern={currentPattern}
+        onPatternChange={setCurrentPattern}
+      />
       <div className="terminal-container">
         {!isMinimized && !isClosed && (
           <div

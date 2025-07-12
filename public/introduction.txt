@@ -4,7 +4,8 @@ I'm a software engineer based in Rochester, New York. I've been passionate about
 
 I love building software that makes a difference, and I'm always excited to learn new technologies and solve challenging problems.
 
-Feel free to explore my site using the commands below!
+Feel free to explore my site using the commands below! 
+Drag or minimize the terminal window and watch the generative art!
 
-:)  👍 
+🙂👍 
 
