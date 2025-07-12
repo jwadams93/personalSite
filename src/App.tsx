@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { EMAIL_CONFIG } from './config';
 
+// Polyfill for global (needed for Hydra in browser)
+declare const global: any;
+if (typeof global === 'undefined') {
+  (window as any).global = window;
+}
+
+import HydraBackground from './components/HydraBackground';
+
 // @ts-ignore
 declare const anime: any;
 
@@ -31,12 +39,20 @@ const App: React.FC = () => {
   const terminalRef = useRef<HTMLDivElement>(null);
 
   const [introductionText, setIntroductionText] = useState<string>('');
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const [lastPosition, setLastPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [lastSize, setLastSize] = useState<{ width: number; height: number }>({ width: 900, height: 600 });
+
+  const [hydraActive, setHydraActive] = useState(true);
 
   const commands = [
     'LINKEDIN - Connect with me on LinkedIn',
     'MESSAGE -name <name> -message <message> - Send me a message',
     'WHOAMI - Show current user name',
     'SETNAME <name> - Set your user name',
+    'HYDRA - Toggle generative background',
     'HELP - Show available commands',
     'CLEAR - Clear the terminal'
   ];
@@ -95,6 +111,9 @@ const App: React.FC = () => {
   // Center terminal on load
   useEffect(() => {
     const centerTerminal = () => {
+      // Don't center if terminal is closed or minimized
+      if (isClosed || isMinimized) return;
+      
       const x = (window.innerWidth - 900) / 2;
       const y = (window.innerHeight - 600) / 2;
       setTerminalPosition({ x: Math.max(0, x), y: Math.max(0, y) });
@@ -105,7 +124,7 @@ const App: React.FC = () => {
     setTimeout(centerTerminal, 100);
     window.addEventListener('resize', centerTerminal);
     return () => window.removeEventListener('resize', centerTerminal);
-  }, []);
+  }, [isClosed, isMinimized]);
 
   // Detect user name from browser data
   useEffect(() => {
@@ -184,7 +203,6 @@ const App: React.FC = () => {
         { type: 'output' as const, content: '' }
       ]);
       setCurrentStep(3);
-      setTimeout(() => inputRef.current?.focus(), 100);
     }, 1000);
   };
 
@@ -233,6 +251,10 @@ const App: React.FC = () => {
           { type: 'output' as const, content: 'Available commands:' },
           ...commands.map(cmd => ({ type: 'output' as const, content: `  ${cmd}` }))
         ]);
+        break;
+      case 'HYDRA':
+        setHydraActive(!hydraActive);
+        setLines(prev => [...prev, { type: 'output', content: `Hydra background ${hydraActive ? 'disabled' : 'enabled'}` }]);
         break;
       case 'CLEAR':
         setLines([]);
@@ -366,12 +388,22 @@ const App: React.FC = () => {
     }
   }, [isDragging, dragOffset]);
 
-  // Refocus input after dragging
+  // Focus input when terminal is ready
   useEffect(() => {
-    if (!isDragging && currentStep >= 3) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+    if (currentStep >= 3 && !isClosed && !isMinimized && !isDragging) {
+      const focusInput = () => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      };
+      
+      // Try multiple times to ensure focus works
+      focusInput();
+      setTimeout(focusInput, 100);
+      setTimeout(focusInput, 500);
+      setTimeout(focusInput, 1000);
     }
-  }, [isDragging, currentStep]);
+  }, [currentStep, isClosed, isMinimized, isDragging]);
 
   // Store user name when they use MESSAGE command
   const storeUserName = (name: string) => {
@@ -379,67 +411,234 @@ const App: React.FC = () => {
     setUserName(name);
   };
 
+  // Maximize/restore handler
+  const handleMaximize = () => {
+    if (!isMaximized) {
+      setLastPosition(terminalPosition);
+      setLastSize({ width: 900, height: 600 });
+      setIsMaximized(true);
+      setIsMinimized(false);
+      
+      // Maximize to full screen with animation
+      if (terminalRef.current) {
+        anime({
+          targets: terminalRef.current,
+          width: [900, window.innerWidth],
+          height: [600, window.innerHeight],
+          translateX: [terminalPosition.x, 0],
+          translateY: [terminalPosition.y, 0],
+          duration: 800,
+          easing: 'easeOutElastic(1, 0.6)'
+        });
+      }
+    } else {
+      setIsMaximized(false);
+      
+      // Restore to original size and position
+      if (terminalRef.current) {
+        anime({
+          targets: terminalRef.current,
+          width: [window.innerWidth, 900],
+          height: [window.innerHeight, 600],
+          translateX: [0, lastPosition.x],
+          translateY: [0, lastPosition.y],
+          duration: 600,
+          easing: 'easeOutBack(1.7)'
+        });
+      } else {
+        setTerminalPosition(lastPosition);
+      }
+    }
+  };
+
+  // Minimize handler
+  const handleMinimize = () => {
+    // Animate terminal down to the dock first
+    if (terminalRef.current) {
+      const dockY = window.innerHeight - 100; // Dock position
+      const currentY = terminalPosition.y;
+      
+      // Disable CSS transitions during animation
+      terminalRef.current.style.transition = 'none';
+      
+      anime({
+        targets: terminalRef.current,
+        translateY: [currentY, dockY],
+        scale: [1, 0.3],
+        opacity: [1, 0],
+        duration: 800,
+        easing: 'easeInBack(1.7)',
+        complete: () => {
+          // Set state after animation completes
+          setIsMinimized(true);
+          setIsMaximized(false);
+          
+          // Re-enable CSS transitions
+          if (terminalRef.current) {
+            terminalRef.current.style.transition = '';
+          }
+          
+          // Add a bounce effect to the dock icon
+          const dockIcon = document.querySelector('.dock-icon');
+          if (dockIcon) {
+            anime({
+              targets: dockIcon,
+              scale: [1, 1.4, 1],
+              duration: 600,
+              easing: 'easeOutElastic(1, 0.8)'
+            });
+          }
+        }
+      });
+    } else {
+      setIsMinimized(true);
+      setIsMaximized(false);
+    }
+  };
+
+  // Restore from dock
+  const handleRestore = () => {
+    setIsMinimized(false);
+    
+    // Animate terminal back from dock to original position
+    if (terminalRef.current) {
+      const dockY = window.innerHeight - 100;
+      const targetY = terminalPosition.y;
+      
+      // Disable CSS transitions during animation
+      terminalRef.current.style.transition = 'none';
+      
+      // Start from dock position
+      terminalRef.current.style.transform = `translate(${terminalPosition.x}px, ${dockY}px) scale(0.3)`;
+      terminalRef.current.style.opacity = '0';
+      
+      // Animate back to normal with bounce
+      setTimeout(() => {
+        anime({
+          targets: terminalRef.current,
+          translateY: [dockY, targetY],
+          scale: [0.3, 1.1, 1],
+          opacity: [0, 1, 1],
+          duration: 1000,
+          easing: 'easeOutElastic(1, 0.8)',
+          complete: () => {
+            // Re-enable CSS transitions
+            if (terminalRef.current) {
+              terminalRef.current.style.transition = '';
+            }
+          }
+        });
+      }, 50);
+    }
+  };
+
+  // Close handler
+  const handleClose = () => {
+    // Browser security prevents closing windows not opened by script
+    // So we just fade out the terminal with animation
+    if (terminalRef.current) {
+      terminalRef.current.classList.add('closing');
+      setTimeout(() => {
+        setIsClosed(true);
+        // Rush back in from the left after 2 seconds
+        setTimeout(() => {
+          setIsClosed(false);
+          // Position terminal off-screen to the left
+          const centerX = (window.innerWidth - 900) / 2;
+          const centerY = (window.innerHeight - 600) / 2;
+          
+          // Set position and animate in one go
+          setTerminalPosition({ x: -1000, y: centerY });
+          
+          // Animate it rushing back in with velocity and bounce
+          setTimeout(() => {
+            if (terminalRef.current) {
+              anime({
+                targets: terminalRef.current,
+                translateX: [0, 100, -50, 20, 0], // Rush in with overshoot and settle
+                duration: 1500,
+                easing: 'easeOutElastic(1, 0.6)',
+                complete: () => {
+                  // Ensure final position is centered
+                  setTerminalPosition({ x: Math.max(0, centerX), y: Math.max(0, centerY) });
+                }
+              });
+            }
+          }, 200);
+        }, 2000); // 2 seconds delay
+      }, 500); // Match the CSS animation duration
+    } else {
+      setIsClosed(true);
+    }
+  };
 
 
   return (
-    <div className="terminal-container">
-      <div 
-        className={`terminal ${showScanLines ? 'scan-lines' : ''}`}
-        ref={terminalRef}
-        style={{
-          transform: `translate(${terminalPosition.x}px, ${terminalPosition.y}px)`,
-          cursor: isDragging ? 'grabbing' : 'default'
-        }}
-        onMouseDown={handleMouseDown}
-      >
-        <div className="terminal-header">
-          <div className="terminal-buttons">
-            <div className="terminal-button close"></div>
-            <div className="terminal-button minimize"></div>
-            <div className="terminal-button maximize"></div>
-          </div>
-          <div className="terminal-title">{userName}@-jake-:~$</div>
-        </div>
-        <div className="terminal-content">
-          {lines.map((line, index) => (
-            <div key={index} className={`terminal-line ${line.type}`}>
-              {line.type === 'command' && !line.content.includes('@-jake-:~$') && (
-                <span className="prompt">{userName}@-jake-:~$ </span>
+    <>
+      <HydraBackground isActive={!isClosed && hydraActive} />
+      <div className="terminal-container">
+        {!isMinimized && !isClosed && (
+          <div
+            className={`terminal ${showScanLines ? 'scan-lines' : ''}`}
+            ref={terminalRef}
+            style={{
+              transform: `translate(${terminalPosition.x}px, ${terminalPosition.y}px)`,
+              cursor: isDragging ? 'grabbing' : 'default',
+              zIndex: 10
+            }}
+            onMouseDown={handleMouseDown}
+          >
+            <div className="terminal-header">
+              <div className="terminal-buttons">
+                <div className="terminal-button close" onClick={handleClose}></div>
+                <div className="terminal-button minimize" onClick={handleMinimize}></div>
+                <div className="terminal-button maximize" onClick={handleMaximize}></div>
+              </div>
+              <div className="terminal-title">{userName}@-jake-:~$</div>
+            </div>
+            <div className="terminal-content">
+              {lines.map((line, index) => (
+                <div key={index} className={`terminal-line ${line.type}`}>
+                  {line.type === 'command' && !line.content.includes('@-jake-:~$') && (
+                    <span className="prompt">{userName}@-jake-:~$ </span>
+                  )}
+                  <span className="content">{line.content}</span>
+                </div>
+              ))}
+              {currentStep >= 3 && (
+                <div className="terminal-line command">
+                  <span className="prompt">{userName}@-jake-:~$ </span>
+                  <span className="input-display">
+                    {currentInput}
+                    {showCursor && <span className="cursor">|</span>}
+                  </span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={currentInput}
+                    onChange={(e) => setCurrentInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="terminal-input"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    placeholder=""
+                  />
+                </div>
               )}
-              <span className="content">{line.content}</span>
             </div>
-          ))}
-          {currentStep >= 3 && (
-            <div className="terminal-line command">
-              <span className="prompt">{userName}@-jake-:~$ </span>
-              <span className="input-display">
-                {currentInput}
-                {showCursor && <span className="cursor">|</span>}
-              </span>
-              <input
-                ref={inputRef}
-                type="tel"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="terminal-input"
-                autoFocus
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                role="textbox"
-                aria-label="Terminal command input"
-                placeholder=""
-              />
-            </div>
-          )}
+          </div>
+        )}
+              {isMinimized && (
+        <div className="terminal-dock" onClick={handleRestore}>
+          <div className="dock-icon">
+            <span role="img" aria-label="Terminal">🖥️</span>
+          </div>
         </div>
+      )}
       </div>
-    </div>
+    </>
   );
 };
 
