@@ -261,9 +261,12 @@ const App: React.FC = () => {
         break;
       case 'PATTERN':
         const patternMatch = sanitizedCommand.match(/PATTERN\s+(\d+)/i);
+        console.log('PATTERN command:', sanitizedCommand, 'Match:', patternMatch);
         if (patternMatch) {
           const patternIndex = parseInt(patternMatch[1]);
+          console.log('Pattern index:', patternIndex, 'Current pattern:', currentPattern);
           if (patternIndex >= 0 && patternIndex < 8) { // Now 8 patterns
+            console.log('Setting pattern to:', patternIndex);
             setCurrentPattern(patternIndex);
             setLines(prev => [...prev, { type: 'output', content: `Switched to pattern ${patternIndex}` }]);
           } else {
