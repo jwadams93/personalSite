@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { EMAIL_CONFIG } from './config';
 
+// @ts-ignore
+declare const anime: any;
+
 interface TerminalLine {
   type: 'command' | 'output' | 'input';
   content: string;
@@ -14,10 +17,16 @@ const App: React.FC = () => {
   const [showCursor, setShowCursor] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [terminalPosition, setTerminalPosition] = useState({ x: 0, y: 0 });
+  const [terminalPosition, setTerminalPosition] = useState(() => {
+    // Calculate initial centered position
+    const x = ((typeof window !== 'undefined' ? window.innerWidth : 1200) - 900) / 2;
+    const y = ((typeof window !== 'undefined' ? window.innerHeight : 800) - 600) / 2;
+    return { x: Math.max(0, x), y: Math.max(0, y) };
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [userName, setUserName] = useState('guest');
+  const [showScanLines, setShowScanLines] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -32,12 +41,44 @@ const App: React.FC = () => {
     'CLEAR - Clear the terminal'
   ];
 
-  // Blinking cursor effect
+  // Enhanced blinking cursor effect with anime.js
   useEffect(() => {
-    const interval = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-    return () => clearInterval(interval);
+    const cursorAnimation = anime({
+      targets: '.cursor',
+      opacity: [1, 0],
+      duration: 800,
+      easing: 'easeInOutSine',
+      direction: 'alternate',
+      loop: true
+    });
+
+    return () => cursorAnimation.pause();
+  }, []);
+
+  // Window entrance animation
+  useEffect(() => {
+    if (terminalRef.current) {
+      anime({
+        targets: terminalRef.current,
+        scale: [0.8, 1],
+        opacity: [0, 1],
+        duration: 1000,
+        easing: 'easeOutElastic(1, 0.5)',
+        delay: 200
+      });
+    }
+  }, []);
+
+
+
+  // Scan lines effect
+  useEffect(() => {
+    const scanLinesInterval = setInterval(() => {
+      setShowScanLines(true);
+      setTimeout(() => setShowScanLines(false), 100);
+    }, 3000); // Every 3 seconds
+
+    return () => clearInterval(scanLinesInterval);
   }, []);
 
   // Fetch introduction text
@@ -59,7 +100,9 @@ const App: React.FC = () => {
       setTerminalPosition({ x: Math.max(0, x), y: Math.max(0, y) });
     };
     
+    // Center immediately and also after a delay for the animation
     centerTerminal();
+    setTimeout(centerTerminal, 100);
     window.addEventListener('resize', centerTerminal);
     return () => window.removeEventListener('resize', centerTerminal);
   }, []);
@@ -199,6 +242,15 @@ const App: React.FC = () => {
         return;
       default:
         setLines(prev => [...prev, { type: 'output', content: `Command not found: ${sanitizedCommand}. Type HELP for available commands.` }]);
+        // Window shake animation for invalid command
+        if (terminalRef.current) {
+          anime({
+            targets: terminalRef.current,
+            translateX: [-10, 10, -10, 10, 0],
+            duration: 400,
+            easing: 'easeInOutSine'
+          });
+        }
     }
 
     setCurrentInput('');
@@ -327,10 +379,12 @@ const App: React.FC = () => {
     setUserName(name);
   };
 
+
+
   return (
     <div className="terminal-container">
       <div 
-        className="terminal"
+        className={`terminal ${showScanLines ? 'scan-lines' : ''}`}
         ref={terminalRef}
         style={{
           transform: `translate(${terminalPosition.x}px, ${terminalPosition.y}px)`,

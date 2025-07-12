@@ -41,6 +41,32 @@ body {
 
 
 
+/* Scan lines effect */
+.terminal.scan-lines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(0, 255, 0, 0.03) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+  animation: scan-lines 0.1s ease-in-out;
+}
+
+@keyframes scan-lines {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+
 .terminal-header {
   background-color: #2a2a2a;
   padding: 8px 12px;
