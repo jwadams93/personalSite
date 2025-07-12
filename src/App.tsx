@@ -22,8 +22,8 @@ interface TerminalLine {
 const App: React.FC = () => {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [currentInput, setCurrentInput] = useState('');
-  const [showCursor, setShowCursor] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
+  const [showCursor] = useState(true);
+  const [_isTyping, setIsTyping] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [terminalPosition, setTerminalPosition] = useState(() => {
     // Calculate initial centered position
@@ -43,7 +43,7 @@ const App: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
   const [lastPosition, setLastPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [lastSize, setLastSize] = useState<{ width: number; height: number }>({ width: 900, height: 600 });
+  const [_lastSize, setLastSize] = useState<{ width: number; height: number }>({ width: 900, height: 600 });
 
   const [hydraActive, setHydraActive] = useState(true);
   const [currentPattern, setCurrentPattern] = useState(0);
@@ -161,7 +161,6 @@ const App: React.FC = () => {
 
   const typeText = (text: string, speed: number) => {
     setIsTyping(true);
-    let index = 0;
     const lines = text.split('\n');
     
     const typeLine = (lineIndex: number, charIndex: number) => {
@@ -209,10 +208,7 @@ const App: React.FC = () => {
     }, 1000);
   };
 
-  const handleInputChange = (e: React.FormEvent<HTMLDivElement>) => {
-    const content = e.currentTarget.textContent || '';
-    setCurrentInput(content);
-  };
+  // Removed unused handleInputChange function
 
   const handleCommand = (command: string) => {
     const sanitizedCommand = command.trim();

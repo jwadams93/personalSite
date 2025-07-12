@@ -99,8 +99,6 @@ const PATTERNS = [
   {
     name: 'Dynamic Scaling Shapes',
     create: () => {
-      const speed = 0.3;
-      
       shape(20,0.2,0.3)
         .color(0.5,0.8,50)
         .scale(() => Math.sin(time)+1*2)
