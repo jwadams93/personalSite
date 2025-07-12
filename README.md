@@ -1,6 +1,6 @@
-# Jake Adams - Terminal Personal Website
+# Jake - Terminal Personal Website
 
-A terminal-style personal website built with React and TypeScript, inspired by nietzschelabs.com.
+A terminal-style personal website built with React and TypeScript.
 
 ## Features
 
@@ -15,7 +15,7 @@ A terminal-style personal website built with React and TypeScript, inspired by n
 ## Available Commands
 
 - `LINKEDIN` - Opens Jake's LinkedIn profile
-- `MESSAGE -name <name> -message <message>` - Send Jake a message (requires email setup)
+- `MESSAGE -name <name> -message <message>` - Send Jake a message
 - `WHOAMI` - Show current user name
 - `SETNAME <name>` - Set your user name
 - `HELP` - Shows available commands
@@ -70,33 +70,6 @@ src/
 ├── main.tsx         # Application entry point
 └── index.css        # Global styles
 ```
-
-## Customization
-
-To customize the website for your own use:
-
-1. Update the introduction text in `public/introduction.txt`
-2. Modify the available commands in the `commands` array
-3. Update the LinkedIn URL to your profile
-4. Customize the styling in `App.css`
-
-## Email Setup
-
-To enable the MESSAGE command functionality:
-
-1. **Formspree (Recommended)**: 
-   - Sign up at [formspree.io](https://formspree.io)
-   - Create a new form
-   - Replace `YOUR_FORM_ID` in `src/config.ts` with your actual form ID
-
-2. **EmailJS**:
-   - Sign up at [emailjs.com](https://www.emailjs.com)
-   - Create a service and template
-   - Update the `emailjsConfig` in `src/config.ts`
-
-3. **Custom Backend**:
-   - Set up your own server endpoint
-   - Update `customEndpoint` in `src/config.ts`
 
 ## License
 
